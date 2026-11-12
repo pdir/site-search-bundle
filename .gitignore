@@ -1,0 +1,16 @@
+# Composer
+/composer.lock
+/vendor/
+
+# PhpUnit
+/.phpunit.result.cache
+/.phpunit.cache/
+/phpunit.xml
+
+# Tools
+/tools/*/vendor
+/.idea/
+.DS_Store
+
+# dev
+todo.md

@@ -1,0 +1,134 @@
+name: CI
+
+on:
+    pull_request: ~
+    push: ~
+
+jobs:
+    ecs:
+        name: ECS
+        runs-on: ubuntu-latest
+        steps:
+            -   name: Setup PHP
+                uses: shivammathur/setup-php@v2
+                with:
+                    php-version: 8.1 # Run with the lowest supported to avoid incompatible fixes
+                    extensions: dom, fileinfo, filter, gd, hash, intl, json, mbstring, mysqli, pcre, pdo_mysql, zlib
+                    coverage: none
+                env:
+                    COMPOSER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+            -   name: Checkout
+                uses: actions/checkout@v4
+
+            -   name: Install the dependencies
+                run: |
+                    composer update --no-interaction --no-progress
+                    composer bin ecs install --no-interaction --no-progress
+
+            -   name: Run ECS
+                run: tools/ecs/vendor/bin/ecs check src tests --config ecs.php --no-progress-bar --ansi
+
+    phpstan:
+        name: PHPStan
+        runs-on: ubuntu-latest
+        steps:
+            -   name: Setup PHP
+                uses: shivammathur/setup-php@v2
+                with:
+                    php-version: 8.4
+                    extensions: dom, fileinfo, filter, gd, hash, intl, json, mbstring, mysqli, pcre, pdo_mysql, pdo_sqlite, zlib
+                    coverage: none
+                env:
+                    COMPOSER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+            -   name: Checkout
+                uses: actions/checkout@v4
+
+            -   name: Install the dependencies
+                run: |
+                    composer update --no-interaction --no-progress
+                    composer bin phpstan install --no-interaction --no-progress
+
+            -   name: Run PHPStan
+                run: tools/phpstan/vendor/bin/phpstan analyse --no-progress
+
+    tests:
+        name: PHP ${{ matrix.php }}, Contao ${{ matrix.contao }}
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - { php: 8.1, contao: 5.3.* }
+                    - { php: 8.3, contao: 5.7.* }
+                    - { php: 8.4, contao: 6.0.* }
+                    - { php: 8.5, contao: 6.0.* }
+        steps:
+            -   name: Setup PHP
+                uses: shivammathur/setup-php@v2
+                with:
+                    php-version: ${{ matrix.php }}
+                    extensions: dom, fileinfo, filter, gd, hash, intl, json, mbstring, mysqli, pcre, pdo_mysql, pdo_sqlite, zlib
+                    coverage: none
+                env:
+                    COMPOSER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+            -   name: Checkout
+                uses: actions/checkout@v4
+
+            -   name: Install the dependencies
+                run: |
+                    composer require contao/core-bundle:"${{ matrix.contao }}" --no-update --no-interaction
+                    composer update --no-interaction --no-progress
+
+            -   name: Run the unit tests
+                run: vendor/bin/phpunit --colors=always
+
+    engines:
+        name: External engines (Meilisearch, Typesense)
+        runs-on: ubuntu-latest
+        services:
+            meilisearch:
+                image: getmeili/meilisearch:v1.12
+                env:
+                    MEILI_MASTER_KEY: ciMasterKey1234567890
+                    MEILI_NO_ANALYTICS: true
+                ports:
+                    - 7700:7700
+            typesense:
+                image: typesense/typesense:28.0
+                env:
+                    TYPESENSE_API_KEY: ciTypesenseKey
+                    TYPESENSE_DATA_DIR: /tmp
+                ports:
+                    - 8108:8108
+        env:
+            PDIR_SITE_SEARCH_TEST_MEILISEARCH: meilisearch://ciMasterKey1234567890@127.0.0.1:7700
+            PDIR_SITE_SEARCH_TEST_TYPESENSE: typesense://ciTypesenseKey@127.0.0.1:8108
+        steps:
+            -   name: Setup PHP
+                uses: shivammathur/setup-php@v2
+                with:
+                    php-version: 8.4
+                    extensions: dom, fileinfo, filter, gd, hash, intl, json, mbstring, mysqli, pcre, pdo_mysql, pdo_sqlite, zlib
+                    coverage: none
+                env:
+                    COMPOSER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+            -   name: Checkout
+                uses: actions/checkout@v4
+
+            -   name: Install the dependencies
+                run: composer update --no-interaction --no-progress
+
+            -   name: Wait for the services
+                run: |
+                    for i in $(seq 1 30); do
+                        curl -sf http://127.0.0.1:7700/health && curl -sf http://127.0.0.1:8108/health && exit 0
+                        sleep 2
+                    done
+                    exit 1
+
+            -   name: Run the engine tests
+                run: vendor/bin/phpunit --colors=always tests/Engine

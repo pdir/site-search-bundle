@@ -1,0 +1,156 @@
+{% extends "@Contao/be_main" %}
+{% trans_default_domain 'contao_site_search' %}
+
+{% block main_content %}
+    <div class="site-search-backend">
+        {% if reindexed %}
+            <p class="{{ reindexed.failed or reindexed.errors ? 'tl_error' : 'tl_confirm' }}">
+                {% if reindexed.failed %}
+                    {{ 'site_search.reindexFailed'|trans([reindexed.source]) }}
+                {% else %}
+                    {{ 'site_search.reindexDone'|trans([reindexed.source, reindexed.indexed, reindexed.removed, reindexed.errors]) }}
+                {% endif %}
+            </p>
+        {% endif %}
+
+        <section class="tl_box">
+            <h2 class="sub_headline">{{ 'site_search.index'|trans }}</h2>
+
+            {% if index.error %}
+                <p class="tl_error">{{ index.error }}</p>
+            {% endif %}
+
+            <table class="tl_listing">
+                <thead>
+                    <tr>
+                        <th class="tl_folder_tlist">{{ 'site_search.source'|trans }}</th>
+                        <th class="tl_folder_tlist">{{ 'site_search.documents'|trans }}</th>
+                        <th class="tl_folder_tlist"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for source, count in index.counts %}
+                        <tr>
+                            <td class="tl_file_list">{{ source }}</td>
+                            <td class="tl_file_list">{{ count|number_format(0, ',', '.') }}</td>
+                            <td class="tl_file_list tl_right_nowrap">
+                                {% if source in providers %}
+                                    <form method="post">
+                                        <input type="hidden" name="REQUEST_TOKEN" value="{{ contao.request_token }}">
+                                        <input type="hidden" name="source" value="{{ source }}">
+                                        <button type="submit" class="tl_submit">{{ 'site_search.reindex'|trans }}</button>
+                                    </form>
+                                {% else %}
+                                    <a href="{{ path('contao_backend', { do: 'maintenance' }) }}">{{ 'site_search.crawler'|trans }}</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <p class="tl_help">
+                {{ 'site_search.engine'|trans([index.engine]) }} ·
+                {% if index.size is not null %}
+                    {{ 'site_search.indexInfo'|trans([index.total|number_format(0, ',', '.'), (index.size / 1048576)|number_format(1, ',', '.'), index.modified ? index.modified|date('d.m.Y H:i') : '–']) }}
+                {% else %}
+                    {{ 'site_search.indexInfoExternal'|trans([index.total|number_format(0, ',', '.')]) }}
+                {% endif %}
+                <br>
+                <code>{{ index.location }}</code> · <code>php vendor/bin/contao-console pdir:site-search:reindex</code>
+            </p>
+        </section>
+
+        <section class="tl_box">
+            <h2 class="sub_headline">{{ 'site_search.log'|trans }}</h2>
+
+            {% if not log.enabled %}
+                <p class="tl_info">{{ 'site_search.logDisabled'|trans }}</p>
+            {% else %}
+                {% set stats = log.statistics %}
+
+                <p>
+                    {% for period in log.periods %}
+                        {% if period == log.days %}
+                            <strong>{{ 'site_search.days'|trans([period]) }}</strong>
+                        {% else %}
+                            <a href="{{ path('pdir_site_search_backend', { days: period }) }}">{{ 'site_search.days'|trans([period]) }}</a>
+                        {% endif %}
+                        {% if not loop.last %} · {% endif %}
+                    {% endfor %}
+                </p>
+
+                <p>
+                    {{ 'site_search.summary'|trans([
+                        stats.searches|number_format(0, ',', '.'),
+                        stats.terms|number_format(0, ',', '.'),
+                        stats.searches ? (stats.zeroHits / stats.searches * 100)|round : 0,
+                        stats.clicks|number_format(0, ',', '.')
+                    ]) }}
+                </p>
+
+                <div class="site-search-backend__columns">
+                    <div>
+                        <h3>{{ 'site_search.top'|trans }}</h3>
+                        {% if stats.top %}
+                            <table class="tl_listing">
+                                <thead>
+                                    <tr>
+                                        <th class="tl_folder_tlist">{{ 'site_search.term'|trans }}</th>
+                                        <th class="tl_folder_tlist">{{ 'site_search.searches'|trans }}</th>
+                                        <th class="tl_folder_tlist">{{ 'site_search.hits'|trans }}</th>
+                                        <th class="tl_folder_tlist">{{ 'site_search.clicks'|trans }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for row in stats.top %}
+                                        <tr>
+                                            <td class="tl_file_list">{{ row.term }}</td>
+                                            <td class="tl_file_list">{{ row.searches }}</td>
+                                            <td class="tl_file_list">{{ row.hits }}</td>
+                                            <td class="tl_file_list">{{ row.clicks }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        {% else %}
+                            <p class="tl_info">{{ 'site_search.empty'|trans }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <h3>{{ 'site_search.noHits'|trans }}</h3>
+                        <p class="tl_help">{{ 'site_search.noHitsInfo'|trans }}</p>
+                        {% if stats.noHits %}
+                            <table class="tl_listing">
+                                <thead>
+                                    <tr>
+                                        <th class="tl_folder_tlist">{{ 'site_search.term'|trans }}</th>
+                                        <th class="tl_folder_tlist">{{ 'site_search.searches'|trans }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for row in stats.noHits %}
+                                        <tr>
+                                            <td class="tl_file_list">{{ row.term }}</td>
+                                            <td class="tl_file_list">{{ row.searches }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        {% else %}
+                            <p class="tl_info">{{ 'site_search.empty'|trans }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        </section>
+    </div>
+
+    <style>
+        .site-search-backend .tl_box { padding: 15px; }
+        .site-search-backend table { width: 100%; }
+        .site-search-backend__columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: 1.5rem; }
+        .site-search-backend form { display: inline; }
+    </style>
+{% endblock %}

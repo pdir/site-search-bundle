@@ -1,0 +1,7 @@
+pdir_site_search:
+    resource: ../src/Controller/SearchController.php
+    type: attribute
+
+pdir_site_search_backend:
+    resource: ../src/Controller/Backend/SiteSearchBackendController.php
+    type: attribute

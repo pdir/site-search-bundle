@@ -1,0 +1,53 @@
+{#
+    Search form with suggestions.
+
+    Without JavaScript the form submits to the results page (GET ?keywords=).
+    site-search.js turns the input into a WAI-ARIA combobox and loads the
+    suggestions from the search endpoint.
+
+    Expects "site_search" (see Pdir\SiteSearchBundle\Frontend\SearchFormBuilder).
+#}
+{% trans_default_domain 'contao_default' %}
+
+{% block site_search_component %}
+    {% set search_id = site_search.id %}
+    <form
+        class="site-search"
+        action="{{ site_search.action }}"
+        method="get"
+        role="search"
+        data-site-search="{{ site_search.config|json_encode|e('html_attr') }}"
+    >
+        <label class="site-search__label" for="{{ search_id }}-input">{{ 'MSC.siteSearch.label'|trans }}</label>
+        <div class="site-search__field">
+            <input
+                id="{{ search_id }}-input"
+                class="site-search__input"
+                type="search"
+                name="keywords"
+                value="{{ site_search.keywords }}"
+                placeholder="{{ 'MSC.siteSearch.placeholder'|trans }}"
+                maxlength="200"
+                autocomplete="off"
+                spellcheck="false"
+                enterkeyhint="search"
+                {% if site_search.autofocus %}autofocus{% endif %}
+            >
+            <button class="site-search__submit" type="submit">{{ 'MSC.siteSearch.submit'|trans }}</button>
+        </div>
+        <div class="site-search__panel" hidden>
+            <ul id="{{ search_id }}-listbox" class="site-search__listbox" role="listbox" aria-label="{{ 'MSC.siteSearch.suggestions'|trans }}"></ul>
+            <a class="site-search__all" href="{{ site_search.action }}" hidden></a>
+        </div>
+        <div class="site-search__status" role="status"></div>
+    </form>
+
+    {% block site_search_assets %}
+        {% add "pdir_site_search_css" to stylesheets %}
+            <link rel="stylesheet" href="{{ asset('styles/site-search.css', 'pdir_site_search') }}">
+        {% endadd %}
+        {% add "pdir_site_search_js" to body %}
+            <script src="{{ asset('js/site-search.js', 'pdir_site_search') }}" defer></script>
+        {% endadd %}
+    {% endblock %}
+{% endblock %}

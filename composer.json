@@ -1,0 +1,88 @@
+{
+    "name": "pdir/site-search-bundle",
+    "description": "A better full-text search for Contao CMS",
+    "license": "LGPL-3.0-or-later",
+    "type": "contao-bundle",
+    "authors": [
+        {
+            "name": "pdir GmbH",
+            "homepage": "https://pdir.de"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/pdir/site-search-bundle/issues",
+        "source": "https://github.com/pdir/site-search-bundle"
+    },
+    "funding": [
+        {
+            "type": "github",
+            "url": "https://github.com/pdir"
+        }
+    ],
+    "require": {
+        "php": "^8.1",
+        "ext-mbstring": "*",
+        "ext-pdo_sqlite": "*",
+        "contao/core-bundle": "^5.3 || ^6.0",
+        "loupe/loupe": "^0.4 || ^0.9 || ^1.1",
+        "symfony/config": "^6.4 || ^7.0 || ^8.0",
+        "symfony/console": "^6.4 || ^7.0 || ^8.0",
+        "symfony/dependency-injection": "^6.4 || ^7.0 || ^8.0",
+        "symfony/dom-crawler": "^6.4 || ^7.0 || ^8.0",
+        "symfony/framework-bundle": "^6.4 || ^7.0 || ^8.0",
+        "symfony/http-client": "^6.4 || ^7.0 || ^8.0",
+        "symfony/http-client-contracts": "^3.0",
+        "symfony/http-foundation": "^6.4 || ^7.0 || ^8.0",
+        "symfony/http-kernel": "^6.4 || ^7.0 || ^8.0",
+        "symfony/routing": "^6.4 || ^7.0 || ^8.0",
+        "symfony/translation-contracts": "^3.0"
+    },
+    "require-dev": {
+        "bamarni/composer-bin-plugin": "^1.5",
+        "contao/manager-plugin": "^2.0",
+        "contao/news-bundle": "^5.3 || ^6.0",
+        "phpunit/phpunit": "^10.5 || ^11.5"
+    },
+    "suggest": {
+        "contao/news-bundle": "Index news entries directly from the database (source \"news\")"
+    },
+    "conflict": {
+        "contao/manager-plugin": "<2.0 || >=3.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Pdir\\SiteSearchBundle\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Pdir\\SiteSearchBundle\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "bamarni/composer-bin-plugin": true,
+            "contao-components/installer": true,
+            "contao/manager-plugin": true,
+            "php-http/discovery": true
+        }
+    },
+    "extra": {
+        "bamarni-bin": {
+            "bin-links": false,
+            "target-directory": "tools",
+            "forward-command": false
+        },
+        "contao-manager-plugin": "Pdir\\SiteSearchBundle\\ContaoManager\\Plugin"
+    },
+    "scripts": {
+        "all": [
+            "@unit-tests",
+            "@ecs",
+            "@phpstan"
+        ],
+        "ecs": "@php tools/ecs/vendor/bin/ecs check src tests --config ecs.php --fix --ansi",
+        "phpstan": "@php tools/phpstan/vendor/bin/phpstan analyze --ansi",
+        "unit-tests": "@php vendor/bin/phpunit --colors=always"
+    }
+}

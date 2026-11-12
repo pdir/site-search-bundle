@@ -1,0 +1,29 @@
+includes:
+    - tools/phpstan/vendor/phpstan/phpstan-phpunit/extension.neon
+    - tools/phpstan/vendor/phpstan/phpstan-phpunit/rules.neon
+    - tools/phpstan/vendor/phpstan/phpstan-symfony/extension.neon
+    - tools/phpstan/vendor/phpstan/phpstan-symfony/rules.neon
+
+parameters:
+    level: 6
+
+    paths:
+        - %currentWorkingDirectory%/src
+        - %currentWorkingDirectory%/tests
+
+    universalObjectCratesClasses:
+        - Contao\Model
+        - Contao\Template
+
+    ignoreErrors:
+        # Compatibility with Loupe 0.x: PHPStan analyses against the installed Loupe 1.x
+        -
+            identifier: function.alreadyNarrowedType
+            path: src/Engine/LoupeEngine.php
+        -
+            identifier: nullCoalesce.offset
+            path: src/Engine/LoupeEngine.php
+        # Loupe 0.x returns an IndexResult from addDocuments(), 1.x returns void
+        -
+            identifiers: [method.void, function.impossibleType, function.alreadyNarrowedType, booleanOr.alwaysTrue, deadCode.unreachable]
+            path: src/Search/LoupeIndexFactory.php

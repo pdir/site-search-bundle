@@ -1,0 +1,10 @@
+{#
+    Kept for compatibility: forces click tracking (Matomo _paq / dataLayer).
+    The front end module now has the option "Track clicks" for this.
+#}
+{% extends "@Contao/frontend_module/site_search.html.twig" %}
+
+{% block content %}
+    {% set site_search = site_search|merge({config: site_search.config|merge({tracking: true})}) %}
+    {{ parent() }}
+{% endblock %}

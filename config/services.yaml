@@ -1,0 +1,45 @@
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+
+  Pdir\SiteSearchBundle\:
+    resource: ../src/*
+    exclude: ../src/{ContaoManager,DependencyInjection,Engine,PdirSiteSearchBundle.php}
+
+  # Search engine from the DSN in pdir_site_search.engine (Loupe, Meilisearch, Typesense)
+  Pdir\SiteSearchBundle\Engine\EngineFactory:
+    arguments:
+      $httpClient: '@?http_client'
+
+  Pdir\SiteSearchBundle\Engine\SearchEngineInterface:
+    factory: ['@Pdir\SiteSearchBundle\Engine\EngineFactory', 'create']
+    arguments: ['%pdir_site_search.engine%']
+
+  Pdir\SiteSearchBundle\Controller\SearchController:
+    arguments:
+      $filterByDomain: '%pdir_site_search.filter_by_domain%'
+
+  Pdir\SiteSearchBundle\Controller\FrontendModule\SiteSearchResultsController:
+    arguments:
+      $filterByDomain: '%pdir_site_search.filter_by_domain%'
+
+  Pdir\SiteSearchBundle\Search\LoupeIndexFactory:
+    arguments:
+      $indexPath: '%pdir_site_search.index_path%'
+
+  Pdir\SiteSearchBundle\Search\SiteSearchIndexer:
+    arguments:
+      $indexProtected: '%pdir_site_search.index_protected%'
+    tags:
+      - { name: 'contao.search_indexer' }
+
+  Pdir\SiteSearchBundle\Source\SourceRegistry:
+    arguments:
+      $providers: !tagged_iterator pdir_site_search.document_provider
+
+  Pdir\SiteSearchBundle\Log\SearchLog:
+    arguments:
+      $enabled: '%pdir_site_search.log.enabled%'
+      $retentionDays: '%pdir_site_search.log.retention_days%'
+      $minSearches: '%pdir_site_search.log.min_searches%'

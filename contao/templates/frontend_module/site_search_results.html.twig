@@ -1,0 +1,93 @@
+{% extends "@Contao/frontend_module/_base.html.twig" %}
+{% use "@Contao/component/_site_search.html.twig" %}
+{% trans_default_domain 'contao_default' %}
+
+{% block content %}
+    {{ block('site_search_component') }}
+
+    {% if not result and popular|default([]) %}
+        {% with { terms: popular, terms_class: 'popular', terms_label: 'MSC.siteSearch.popular'|trans } %}{{ block('site_search_terms') }}{% endwith %}
+    {% endif %}
+
+    {% if result %}
+        <!-- indexer::stop -->
+        <div class="site-search-results">
+            <p class="site-search-results__count">
+                {% if result.totalHits %}
+                    {{ 'MSC.siteSearch.resultsFor'|trans([result.totalHits, result.query]) }}
+                {% else %}
+                    {{ 'MSC.siteSearch.noResultsFor'|trans([result.query]) }}
+                {% endif %}
+            </p>
+
+            {% if suggestion|default(null) %}
+                <p class="site-search-results__suggestion">
+                    {{ 'MSC.siteSearch.didYouMeanLink'|trans }} <a href="{{ suggestion.url }}">{{ suggestion.term }}</a>?
+                </p>
+            {% endif %}
+
+            {% if result.hits %}
+                <ol class="site-search-results__list" start="{{ (result.page - 1) * result.hitsPerPage + 1 }}">
+                    {% for hit in result.hits %}
+                        {% block site_search_hit %}
+                            <li class="site-search-results__item">
+                                {% if hit.image %}
+                                    <img class="site-search-results__image" src="{{ hit.image }}" alt="" width="80" height="80" loading="lazy">
+                                {% endif %}
+                                <p class="site-search-results__title">
+                                    {# _formatted is HTML-escaped by SiteSearch except for <em> #}
+                                    <a href="{{ hit.url }}">{% if highlight %}{{ hit._formatted.title|raw }}{% else %}{{ hit.title }}{% endif %}</a>
+                                </p>
+                                {% if hit.description %}
+                                    <p class="site-search-results__snippet">{% if highlight %}{{ hit._formatted.description|raw }}{% else %}{{ hit.description }}{% endif %}</p>
+                                {% endif %}
+                                <p class="site-search-results__url">{{ hit.url }}</p>
+                            </li>
+                        {% endblock %}
+                    {% endfor %}
+                </ol>
+            {% else %}
+                <p class="site-search-results__tips">{{ 'MSC.siteSearch.tips'|trans }}</p>
+            {% endif %}
+
+            {% if related|default([]) %}
+                {% with { terms: related, terms_class: 'related', terms_label: 'MSC.siteSearch.related'|trans } %}{{ block('site_search_terms') }}{% endwith %}
+            {% endif %}
+
+            {% if pagination %}
+                <nav class="site-search-results__pagination" aria-label="{{ 'MSC.siteSearch.pagination'|trans }}">
+                    <ul>
+                        {% if pagination.previous %}
+                            <li><a href="{{ pagination.previous }}" rel="prev">{{ 'MSC.siteSearch.previous'|trans }}</a></li>
+                        {% endif %}
+                        {% for page in pagination.pages %}
+                            <li>
+                                {% if page.current %}
+                                    <strong aria-current="page">{{ page.number }}</strong>
+                                {% else %}
+                                    <a href="{{ page.url }}">{{ page.number }}</a>
+                                {% endif %}
+                            </li>
+                        {% endfor %}
+                        {% if pagination.next %}
+                            <li><a href="{{ pagination.next }}" rel="next">{{ 'MSC.siteSearch.next'|trans }}</a></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        </div>
+        <!-- indexer::continue -->
+    {% endif %}
+{% endblock %}
+
+{# Links to search terms ("popular", "related"); expects terms, terms_class, terms_label #}
+{% block site_search_terms %}
+    <nav class="site-search-results__terms site-search-results__terms--{{ terms_class }}" aria-label="{{ terms_label }}">
+        <p class="site-search-results__terms-label">{{ terms_label }}</p>
+        <ul>
+            {% for item in terms %}
+                <li><a href="{{ item.url }}">{{ item.term }}</a></li>
+            {% endfor %}
+        </ul>
+    </nav>
+{% endblock %}
